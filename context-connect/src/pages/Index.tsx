@@ -97,14 +97,14 @@ const Index = () => {
               {apiError && <ErrorMessage message={apiError} onClose={() => setApiError(null)} />}
 
               <PhoneInput
-                label="From"
+                label="Your Number (From)"
                 value={formData.fromNumber}
                 onChange={(v) => updateField('fromNumber', v)}
                 error={errors.fromNumber}
               />
 
               <PhoneInput
-                label="To"
+                label="Recipient Number (To)"
                 value={formData.toNumber}
                 onChange={(v) => updateField('toNumber', v)}
                 error={errors.toNumber}

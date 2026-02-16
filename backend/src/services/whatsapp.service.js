@@ -28,21 +28,71 @@ class WhatsAppService {
     /**
      * Format the Numer message with metadata
      * @param {Object} data - Numer data
+     * @param {string} recipientType - 'recipient' or 'sender'
      * @returns {string} Formatted WhatsApp message
      */
-    formatMessage(data) {
-        const { context, fromNumber, timestamp, location } = data;
+    formatMessage(data, recipientType = 'recipient') {
+        const { context, fromNumber, toNumber, timestamp, location, sharedContext } = data;
 
-        let message = '📱 New Numer\n\n';
-        message += `Context: ${context}\n`;
-        message += `From: ${fromNumber}\n`;
-        message += `When: ${new Date(timestamp).toLocaleString()}\n`;
+        // Header / Intro based on recipient type
+        // Recipient always gets "You received a Numer"
+        // Sender gets "You created a Numer"
+        let introLine = 'You received a Numer';
+        let numberDisplay = `From: ${fromNumber}`;
 
-        if (location && location.lat && location.lng) {
-            message += `Where: ${location.lat}, ${location.lng}\n`;
+        if (recipientType === 'sender') {
+            introLine = 'You sent Numer';
+            numberDisplay = `To: ${toNumber}`;
         }
 
-        message += '\n---\nSent via Numer.me';
+        // Format Date: "February 17, 2026 at 2:19 AM"
+        let formattedDate;
+        try {
+            const dateObj = new Date(timestamp);
+            const datePart = dateObj.toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            const timePart = dateObj.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: true
+            });
+            formattedDate = `${datePart} at ${timePart}`;
+        } catch (e) {
+            formattedDate = new Date(timestamp).toLocaleString();
+        }
+
+        // Determine Mode string
+        const modeString = sharedContext ? 'Shared Context' : 'One-Way Context';
+
+        // Build Message
+        // 1. Header
+        let message = ``;
+
+        // 2. Intro
+        message += `${introLine}\n\n`;
+
+        // 3. Context
+        message += `Context: ${context}\n\n`;
+
+        // 4. Details
+        message += `${numberDisplay}\n`;
+        message += `Date: ${formattedDate}\n`;
+
+
+
+
+        // 5. Location
+        if (location && location.lat && location.lng) {
+            const mapLink = `https://maps.google.com/?q=${location.lat},${location.lng}`;
+            message += `Location: View on Map\n${mapLink}\n`;
+        }
+        // 6. Mode
+        message += `Mode: ${modeString}\n`;
+        // 7. Footer
+        message += '\n— Sent via Numer me';
 
         return message;
     }
@@ -105,20 +155,22 @@ class WhatsAppService {
      */
     async sendNumer(data) {
         const { fromNumber, toNumber, sharedContext } = data;
-        const message = this.formatMessage(data);
 
         const results = [];
 
-        // Always send to recipient (To number)
-        logger.info('Sending to recipient (To)');
-        const toResult = await this.sendMessage(toNumber, message);
-        results.push(toResult);
+        // 1. Always send to Sender (From number) - "You created a Numer"
+        // In one-way mode, this is the only message sent.
+        const senderMessage = this.formatMessage(data, 'sender');
+        logger.info('Sending to sender (From)');
+        const fromResult = await this.sendMessage(fromNumber, senderMessage);
+        results.push(fromResult);
 
-        // Send to sender (From number) if shared context enabled
+        // 2. Send to Recipient (To number) ONLY if shared context enabled
         if (sharedContext) {
-            logger.info('Sending to sender (From) - shared context enabled');
-            const fromResult = await this.sendMessage(fromNumber, message);
-            results.push(fromResult);
+            const recipientMessage = this.formatMessage(data, 'recipient');
+            logger.info('Sending to recipient (To) - shared context enabled');
+            const toResult = await this.sendMessage(toNumber, recipientMessage);
+            results.push(toResult);
         }
 
         // Log summary
