@@ -12,9 +12,9 @@ services:
     environment:
       - PORT=8000
       - NODE_ENV=production
-      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
-      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
-      - TWILIO_WHATSAPP_NUMBER=${TWILIO_WHATSAPP_NUMBER:-+14155238886}
+      - TWILIO_ACCOUNT_SID=AC4df0e14f83ed5f24c09099e7922bbcdd
+      - TWILIO_AUTH_TOKEN=ed6c71319da3489a37a2c7466bd58276
+      - TWILIO_WHATSAPP_NUMBER=+14155238886
       - ALLOWED_ORIGINS=http://localhost:5173,http://localhost:80,http://localhost
     env_file:
       - ./backend/.env
