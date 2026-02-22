@@ -1,0 +1,48 @@
+name: Deploy Frontend to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "context-connect/**"       # only runs when frontend files change
+  workflow_dispatch:               # allows manual trigger from GitHub UI
+
+permissions:
+  contents: write                  # needed to push to gh-pages branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: context-connect
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: context-connect/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production bundle
+        run: npm run build
+        env:
+          # Set your production API URL here (can be left as empty string
+          # if the app works without a backend when deployed to GitHub Pages)
+          VITE_API_URL: ${{ secrets.VITE_API_URL || '' }}
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./context-connect/dist
+          publish_branch: gh-pages
+          cname: ""                # leave empty unless you have a custom domain
